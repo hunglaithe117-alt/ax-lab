@@ -1,0 +1,36 @@
+# Build artifacts and per-run scratch space
+bin/
+.work/
+
+# Read-only upstream clones (~2GB). `scripts/setup.sh` re-clones ax on demand;
+# substrate is pinned to the sha ax depends on — see docs/ for why.
+upstream/google-ax/
+upstream/substrate/
+
+# Lesson binaries. `examples/*/run.sh` compiles into a mktemp dir and removes it
+# on exit, so these only appear after a manual `go build -o <name> ./examples/<n>`.
+/01-schema
+/02-validation
+
+# Go build and test output
+*.exe
+*.test
+*.prof
+coverage.out
+*.coverprofile
+go.work
+go.work.sum
+
+# Secrets and local environment overrides
+.env
+.env.*
+!.env.example
+*.kubeconfig
+/kubeconfig
+
+# Editor and OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo

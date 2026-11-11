@@ -1,0 +1,24 @@
+# Captured at the time of the incident, 2026-09-27.
+# Source: `kubectl logs -n ate-system <atenet-router pod> -c envoy`, from the
+# Envoy 1.38.4 A/B run used to test whether the atenet-router crash was an
+# Envoy version regression. It was not: 1.38.4 aborts on the SAME assertion
+# as the pinned 1.39.1, and 1.38.4 prints the assertion message instead of
+# letting the crash handler's own dump segfault over it.
+# The 1.39.1 log itself is gone -- the container has had 0 restarts since the
+# inotify limits were raised -- so docs/06 labels that variant a reconstruction.
+
+[2026-09-27 16:08:21.273][1][info][upstream] [source/common/upstream/cds_api_helper.cc:31] cds: response indicates 4 added/updated cluster(s), 1 removed cluster(s); applying changes
+[2026-09-27 16:08:21.275][1][info][upstream] [source/common/upstream/cds_api_helper.cc:84] cds: added/updated 4 cluster(s) (skipped 0 unmodified cluster(s)); removed 0 cluster(s)
+[2026-09-27 16:08:36.273][1][warning][config] [source/extensions/config_subscription/grpc/grpc_subscription_impl.cc:130] gRPC config: initial fetch timed out for type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+[2026-09-27 16:08:36.273][1][warning][config] [source/extensions/config_subscription/grpc/grpc_subscription_impl.cc:130] gRPC config: initial fetch timed out for type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+[2026-09-27 16:08:36.273][1][info][upstream] [source/common/upstream/cluster_manager_impl.cc:250] cm init: all clusters initialized
+[2026-09-27 16:08:36.273][1][info][main] [source/server/server.cc:1050] all clusters initialized. initializing init manager
+[2026-09-27 16:08:36.275][1][info][tracing] [source/common/tracing/tracer_manager_impl.cc:42] instantiating a new tracer: envoy.tracers.opentelemetry
+[2026-09-27 16:08:36.275][1][info][upstream] [source/common/listener_manager/lds_api.cc:106] lds: add/update listener 'connect_terminate'
+[2026-09-27 16:08:36.284][1][info][upstream] [source/common/listener_manager/lds_api.cc:106] lds: add/update listener 'ingress_https_listener'
+[2026-09-27 16:08:36.285][1][info][upstream] [source/common/listener_manager/lds_api.cc:106] lds: add/update listener 'connect_terminate_tls'
+[2026-09-27 16:08:36.285][1][info][upstream] [source/common/listener_manager/lds_api.cc:106] lds: add/update listener 'ingress_http_listener'
+[2026-09-27 16:08:36.286][1][info][upstream] [source/common/listener_manager/lds_api.cc:106] lds: add/update listener 'main_internal'
+[2026-09-27 16:08:36.287][1][critical][assert] [source/common/filesystem/inotify/watcher_impl.cc:25] assert failure: inotify_fd_ >= 0. Details: Consider increasing value of fs.inotify.max_user_watches and/or fs.inotify.max_user_instances via sysctl
+[2026-09-27 16:08:36.287][1][error][envoy_bug] [./source/common/common/assert.h:38] stacktrace for envoy bug
+[2026-09-27 16:08:36.293][1][error][envoy_bug] [./source/common/common/assert.h:45] #0 UNKNOWN [0x5aa50a71779c]

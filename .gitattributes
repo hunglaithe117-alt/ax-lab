@@ -1,0 +1,13 @@
+# Normalize line endings for a Linux-first lab (scripts assume LF).
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.go text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
+
+# Evidence logs are captured verbatim; do not let git rewrite them.
+docs/evidence/*.log -text

@@ -1,0 +1,43 @@
+#cloud-config
+# Provisioning for the ax-lab VM.
+# Everything here lands inside the VM only. The host is never modified, which is
+# the entire point of running the lab in a VM: ax's Substrate install raises
+# fs.inotify.max_user_instances, and that limit is HOST-GLOBAL and not namespaced
+# per container. Inside a VM with its own kernel, it is just the VM's limit.
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - docker.io
+  - ca-certificates
+  - curl
+  - git
+  - jq
+  - rsync
+
+write_files:
+  # Go 1.27.1 is required: ax's go.mod says `go 1.27.1`. Ubuntu noble ships 1.22,
+  # which is too old, so install the official tarball.
+  - path: /etc/profile.d/axlab.sh
+    permissions: '0644'
+    content: |
+      export PATH=/usr/local/go/bin:$HOME/go/bin:$PATH
+
+runcmd:
+  - [ systemctl, enable, --now, docker ]
+  # The `ubuntu` user needs the docker group; multipass opens a fresh login shell
+  # per `multipass shell`, so this takes effect on the next command.
+  - [ usermod, -aG, docker, ubuntu ]
+  - [ sh, -c, 'apt-get install -y -qq make >/dev/null' ]
+  - [ sh, -c, 'curl -fsSL https://go.dev/dl/go1.27.1.linux-amd64.tar.gz | tar -C /usr/local -xz' ]
+  - [ sh, -c, 'chmod +x /usr/local/go/bin/*' ]
+  # The lab's own tooling: the ax Makefile needs ko, and Substrate's install
+  # needs kubectl and kind. v0.33.0 is the kind version the lab was verified
+  # with; its default node image is v1.37.0, which Substrate requires.
+  - [ sh, -c, 'curl -fsSL -o /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && chmod +x /usr/local/bin/kubectl' ]
+  - [ sh, -c, 'curl -fsSL -o /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.33.0/kind-linux-amd64 && chmod +x /usr/local/bin/kind' ]
+  - [ sh, -c, 'mkdir -p /home/ubuntu/.cache/ko /home/ubuntu/axlab-cache && chown -R ubuntu:ubuntu /home/ubuntu/.cache /home/ubuntu/axlab-cache' ]
+  - [ sh, -c, 'echo "axlab provisioning complete" > /var/log/axlab-provision.done' ]
+
+final_message: "axlab VM provisioned: docker + go1.27.1 ready after $UPTIME seconds"

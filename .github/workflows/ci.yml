@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lessons:
+    name: build + lessons 01-02
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # go.mod replaces github.com/google/ax with ./upstream/google-ax, which is
+      # gitignored (setup.sh clones it locally). CI has to recreate that clone.
+      - name: Clone ax upstream
+        run: git clone --depth 1 https://github.com/google/ax.git upstream/google-ax
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Lesson 01 - schema
+        run: ./examples/01-schema/run.sh
+
+      - name: Lesson 02 - validation
+        run: ./examples/02-validation/run.sh
