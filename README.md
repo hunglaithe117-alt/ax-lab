@@ -37,7 +37,7 @@ Two design decisions worth knowing before you read any code:
 ## Quick start
 
 ```bash
-./scripts/setup.sh        # clone ax if needed, build the binaries, smoke-check them
+./scripts/setup.sh        # clone ax at the pinned revision if needed, build the binaries, smoke-check them
 ./scripts/verify-all.sh   # run every lesson, print PASS/FAIL, exit non-zero on any failure
 ./examples/01-schema/run.sh   # or run one lesson on its own
 ```
@@ -209,9 +209,11 @@ Recorded as they were actually hit, not as a list of warnings:
   `ax-verify.sh` exit **2** without it rather than skipping the checks that need it. Install with
   `cd upstream/substrate && go install ./cmd/kubectl-ate` (`substrate-up.sh` does *not*).
 - **Citations were verified against specific commits.** Substrate is pinned at `67253354` — the
-  exact commit `ax/go.mod` depends on. The **ax** clone is a `--depth 1` clone of whatever `HEAD` was
-  when it was made, here `d0bc38bc`; it is *not* pinned to a release. Line references in these
-  pages are for those two revisions, so re-verify anything load-bearing if you re-clone ax.
+  exact commit `ax/go.mod` depends on. The **ax** clone is pinned by `.ax-revision` to `d0bc38bc`,
+  the commit this track was written against (`main` has since deleted `v1alpha1.MaxNameLength` and
+  `v1alpha1.ValidateTask`, which lessons 01 and 02 use). `scripts/setup.sh` and CI clone that exact
+  commit; set `AXLAB_AX_SHA=<sha>` to move the pin. Line references in these pages are for those two
+  revisions, so re-verify anything load-bearing after a bump.
 - `shellcheck` (0.11.0) is the linter for these scripts; it is not installed on this host by
   default.
 

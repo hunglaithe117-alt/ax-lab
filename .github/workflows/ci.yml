@@ -21,9 +21,17 @@ jobs:
           cache: true
 
       # go.mod replaces github.com/google/ax with ./upstream/google-ax, which is
-      # gitignored (setup.sh clones it locally). CI has to recreate that clone.
-      - name: Clone ax upstream
-        run: git clone --depth 1 https://github.com/google/ax.git upstream/google-ax
+      # gitignored (setup.sh clones it locally). CI recreates that clone at the
+      # revision in .ax-revision: `main` has moved past symbols lessons 01/02 use.
+      - name: Clone ax upstream at the pinned revision
+        run: |
+          set -euo pipefail
+          ax_sha="$(cat .ax-revision)"
+          git init -q upstream/google-ax
+          git -C upstream/google-ax remote add origin https://github.com/google/ax.git
+          git -C upstream/google-ax fetch -q --depth 1 origin "$ax_sha"
+          git -C upstream/google-ax checkout -q FETCH_HEAD
+          echo "ax at $(git -C upstream/google-ax rev-parse --short HEAD)"
 
       - name: Vet
         run: go vet ./...

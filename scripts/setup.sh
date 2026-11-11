@@ -26,6 +26,11 @@ LAB_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 UPSTREAM_DIR="$LAB_ROOT/upstream/google-ax"
 BIN_DIR="$LAB_ROOT/bin"
 UPSTREAM_URL="https://github.com/google/ax.git"   # matches `git remote -v` of the lab's clone
+# The examples compile against symbols from one ax revision (README cites them
+# per-commit). `main` has since removed v1alpha1.MaxNameLength and
+# v1alpha1.ValidateTask, so cloning HEAD breaks lessons 01 and 02. Override with
+# AXLAB_AX_SHA=<sha> when deliberately moving the pin.
+AX_SHA="${AXLAB_AX_SHA:-$(cat "$LAB_ROOT/.ax-revision" 2>/dev/null)}"
 
 export GOFLAGS="${GOFLAGS:--mod=readonly}"
 export CGO_ENABLED="${CGO_ENABLED:-0}"
@@ -48,17 +53,28 @@ info "upstream:  $UPSTREAM_DIR"
 # ------------------------------------------------------------------- clone ---
 # `make build` and the `go build` below both run inside the upstream checkout, so
 # it has to exist. Shallow by design: the lab reads a few specific files and does
-# not need history.
+# not need history. The revision is the one the lessons and docs were written
+# against, not `main` -- see .ax-revision.
+[ -n "$AX_SHA" ] || die "no ax revision: $LAB_ROOT/.ax-revision is missing or empty"
 if [ -d "$UPSTREAM_DIR/.git" ]; then
+  have_sha="$(git -C "$UPSTREAM_DIR" rev-parse HEAD 2>/dev/null || echo unknown)"
   info "upstream clone already present, reusing it"
-  info "  pinned at $(git -C "$UPSTREAM_DIR" rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
-else
-  say "Cloning upstream (shallow, needs network -- one time only)"
-  info "git clone --depth 1 $UPSTREAM_URL"
-  mkdir -p "$(dirname -- "$UPSTREAM_DIR")"
-  if ! git clone --depth 1 "$UPSTREAM_URL" "$UPSTREAM_DIR"; then
-    die "clone failed. If this machine is offline, place a checkout of github.com/google/ax at $UPSTREAM_DIR and re-run."
+  info "  checked out ${have_sha:0:8}"
+  info "  lab pins    ${AX_SHA:0:8}"
+  if [ "$have_sha" != "$AX_SHA" ]; then
+    warn "upstream is not at the pinned revision; lessons 01/02 assert symbols from ${AX_SHA:0:8}"
+    warn "  to re-pin: rm -rf '$UPSTREAM_DIR' && ./scripts/setup.sh"
   fi
+else
+  say "Cloning upstream at the pinned revision (shallow, needs network -- one time only)"
+  info "git init + fetch --depth 1 ${AX_SHA:0:8} from $UPSTREAM_URL"
+  mkdir -p "$UPSTREAM_DIR"
+  git -C "$UPSTREAM_DIR" init -q || die "cannot init $UPSTREAM_DIR"
+  git -C "$UPSTREAM_DIR" remote add origin "$UPSTREAM_URL"
+  if ! git -C "$UPSTREAM_DIR" fetch --depth 1 origin "$AX_SHA"; then
+    die "fetch of $AX_SHA failed. If this machine is offline, place a checkout of github.com/google/ax at that revision in $UPSTREAM_DIR and re-run."
+  fi
+  git -C "$UPSTREAM_DIR" checkout -q FETCH_HEAD || die "cannot check out $AX_SHA"
   info "cloned at $(git -C "$UPSTREAM_DIR" rev-parse --short HEAD)"
 fi
 
